@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>帝王爆擊測試記錄器</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 flex flex-col items-center">
+  <div class="max-w-md w-full space-y-4">
+    <div class="text-center space-y-2">
+      <h1 class="text-2xl font-bold text-amber-400">帝王爆擊測試記錄器</h1>
+      <div class="bg-slate-800 p-3 rounded-xl border border-slate-700">
+        <div class="flex justify-between text-sm mb-1">
+          <span>完成進度</span>
+          <span id="progress-text" class="text-amber-400 font-bold">0 / 27 (0%)</span>
+        </div>
+        <div class="w-full bg-slate-700 h-3 rounded-full overflow-hidden">
+          <div id="progress-bar" class="bg-amber-400 h-full w-0 transition-all duration-300"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="grid-container" class="grid grid-cols-3 gap-2"></div>
+
+    <button onclick="resetAll()" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition">
+      清除所有紀錄
+    </button>
+  </div>
+
+  <script>
+    const container = document.getElementById('grid-container');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    let state = JSON.parse(localStorage.getItem('bey_tracker')) || {};
+
+    const combos = [];
+    for(let a=1; a<=3; a++) {
+      for(let b=1; b<=3; b++) {
+        for(let c=1; c<=3; c++) {
+          combos.push(`${a}${b}${c}`);
+        }
+      }
+    }
+
+    function render() {
+      container.innerHTML = '';
+      let checkedCount = 0;
+
+      combos.forEach(combo => {
+        const isChecked = !!state[combo];
+        if(isChecked) checkedCount++;
+
+        const btn = document.createElement('button');
+        btn.className = `p-3 text-lg font-mono font-bold rounded-xl border flex flex-col items-center justify-center gap-1 transition ${
+          isChecked 
+            ? 'bg-amber-500/20 border-amber-400 text-amber-300 shadow-lg shadow-amber-500/10' 
+            : 'bg-slate-800 border-slate-700 text-slate-300 hover:border-slate-500'
+        }`;
+        btn.innerHTML = `
+          <span>${combo}</span>
+          <span class="text-xs ${isChecked ? 'text-amber-400' : 'text-slate-500'}">${isChecked ? '✓ 已測試' : '未測試'}</span>
+        `;
+        btn.onclick = () => toggle(combo);
+        container.appendChild(btn);
+      });
+
+      const pct = Math.round((checkedCount / 27) * 100);
+      progressBar.style.width = `${pct}%`;
+      progressText.innerText = `${checkedCount} / 27 (${pct}%)`;
+    }
+
+    function toggle(combo) {
+      state[combo] = !state[combo];
+      localStorage.setItem('bey_tracker', JSON.stringify(state));
+      render();
+    }
+
+    function resetAll() {
+      if(confirm('確定要清除所有紀錄嗎？')) {
+        state = {};
+        localStorage.removeItem('bey_tracker');
+        render();
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>
