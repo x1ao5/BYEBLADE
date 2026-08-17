@@ -14,20 +14,20 @@
       
       <div class="grid grid-cols-2 gap-2 text-sm">
         <div>
+          <label class="text-xs text-slate-400">鎖定紋章</label>
+          <input id="input-crest" type="text" placeholder="例：960" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-amber-400" oninput="saveConfig()">
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">主要戰刃</label>
+          <input id="input-main" type="text" placeholder="例：帝王" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-amber-400" oninput="saveConfig()">
+        </div>
+        <div>
+          <label class="text-xs text-slate-400">輔助戰刃</label>
+          <input id="input-sub" type="text" placeholder="例：爆擊" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-amber-400" oninput="saveConfig()">
+        </div>
+        <div>
           <label class="text-xs text-slate-400">固鎖輪盤</label>
-          <input id="lock-ring" type="text" placeholder="例：帝王/某輪盤" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-amber-400" onchange="saveConfig()">
-        </div>
-        <div>
-          <label class="text-xs text-slate-400">零件 1 名稱</label>
-          <input id="part-1" type="text" placeholder="零件 1" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-amber-400" onchange="saveConfig()">
-        </div>
-        <div>
-          <label class="text-xs text-slate-400">零件 2 名稱</label>
-          <input id="part-2" type="text" placeholder="零件 2" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-amber-400" onchange="saveConfig()">
-        </div>
-        <div>
-          <label class="text-xs text-slate-400">零件 3 名稱</label>
-          <input id="part-3" type="text" placeholder="零件 3" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-amber-400" onchange="saveConfig()">
+          <input id="input-ring" type="text" placeholder="例：W" class="w-full bg-slate-900 border border-slate-700 rounded px-2 py-1 text-slate-200 focus:outline-none focus:border-amber-400" oninput="saveConfig()">
         </div>
       </div>
 
@@ -49,7 +49,8 @@
     const listContainer = document.getElementById('list-container');
     const progressText = document.getElementById('progress-text');
     
-    let config = JSON.parse(localStorage.getItem('bey_config')) || { ring: '', p1: '', p2: '', p3: '' };
+    // 使用新的設定 key 以免和舊版衝突
+    let config = JSON.parse(localStorage.getItem('bey_config_v2')) || { crest: '', main: '', sub: '', ring: '' };
     let records = JSON.parse(localStorage.getItem('bey_records_detail')) || {};
 
     // 建立 27 種組合
@@ -63,32 +64,38 @@
     }
 
     // 初始化設定框
-    document.getElementById('lock-ring').value = config.ring;
-    document.getElementById('part-1').value = config.p1;
-    document.getElementById('part-2').value = config.p2;
-    document.getElementById('part-3').value = config.p3;
+    document.getElementById('input-crest').value = config.crest;
+    document.getElementById('input-main').value = config.main;
+    document.getElementById('input-sub').value = config.sub;
+    document.getElementById('input-ring').value = config.ring;
 
+    // 儲存配置並立即重新渲染
     function saveConfig() {
       config = {
-        ring: document.getElementById('lock-ring').value,
-        p1: document.getElementById('part-1').value,
-        p2: document.getElementById('part-2').value,
-        p3: document.getElementById('part-3').value
+        crest: document.getElementById('input-crest').value,
+        main: document.getElementById('input-main').value,
+        sub: document.getElementById('input-sub').value,
+        ring: document.getElementById('input-ring').value
       };
-      localStorage.setItem('bey_config', JSON.stringify(config));
+      localStorage.setItem('bey_config_v2', JSON.stringify(config));
+      render(); // 即時更新下方列表
     }
 
     function render() {
       listContainer.innerHTML = '';
       let checkedCount = 0;
 
+      const nameCrest = config.crest || '鎖定紋章';
+      const nameMain = config.main || '主要戰刃';
+      const nameSub = config.sub || '輔助戰刃';
+      const nameRing = config.ring || '固鎖輪盤';
+
       combos.forEach((combo, index) => {
         const data = records[combo] || { checked: false, time: '', note: '' };
         if(data.checked) checkedCount++;
 
-        const p1Name = config.p1 ? `${config.p1}(${combo[0]})` : `零件${combo[0]}`;
-        const p2Name = config.p2 ? `${config.p2}(${combo[1]})` : `零件${combo[1]}`;
-        const p3Name = config.p3 ? `${config.p3}(${combo[2]})` : `零件${combo[2]}`;
+        // 組合顯示文字：將第一項(紋章)視為通用基底，後面三項加上(1)(2)(3)的標號
+        const comboSubtitle = `${nameCrest} + ${nameMain}(${combo[0]}) + ${nameSub}(${combo[1]}) + ${nameRing}(${combo[2]})`;
 
         const item = document.createElement('div');
         item.className = `p-3 rounded-xl border transition flex flex-col md:flex-row md:items-center justify-between gap-2 ${
@@ -100,7 +107,7 @@
             <input type="checkbox" ${data.checked ? 'checked' : ''} onchange="toggleCheck('${combo}', this.checked)" class="w-5 h-5 accent-amber-400 cursor-pointer">
             <div>
               <div class="font-mono font-bold text-amber-400">#${index + 1} - 組合 [ ${combo} ]</div>
-              <div class="text-xs text-slate-400">${p1Name} + ${p2Name} + ${p3Name}</div>
+              <div class="text-xs text-slate-400">${comboSubtitle}</div>
             </div>
           </div>
           <div class="flex gap-2 text-xs">
@@ -141,19 +148,20 @@
     }
 
     function exportCSV() {
-      let csv = "\uFEFF組合編號,固鎖輪盤,零件1,零件2,零件3,已測試,秒數(s),備註\n";
+      let csv = "\uFEFF組合編號,鎖定紋章,主要戰刃,輔助戰刃,固鎖輪盤,已測試,秒數(s),備註\n";
       combos.forEach((combo) => {
         const d = records[combo] || { checked: false, time: '', note: '' };
-        const p1 = config.p1 || `零件${combo[0]}`;
-        const p2 = config.p2 || `零件${combo[1]}`;
-        const p3 = config.p3 || `零件${combo[2]}`;
-        csv += `"${combo}","${config.ring}","${p1}","${p2}","${p3}","${d.checked ? '是' : '否'}","${d.time}","${d.note}"\n`;
+        const c = config.crest || '鎖定紋章';
+        const m = config.main || '主要戰刃';
+        const s = config.sub || '輔助戰刃';
+        const r = config.ring || '固鎖輪盤';
+        csv += `"${combo}","${c}","${m}(${combo[0]})","${s}(${combo[1]})","${r}(${combo[2]})","${d.checked ? '是' : '否'}","${d.time}","${d.note}"\n`;
       });
 
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.setAttribute("download", `帝王爆擊測試紀錄之鍏子去烘乾_${new Date().toISOString().slice(0,10)}.csv`);
+      link.setAttribute("download", `帝王爆擊測試紀錄之樓欸烘乾_${new Date().toISOString().slice(0,10)}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
